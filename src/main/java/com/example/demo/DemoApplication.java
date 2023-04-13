@@ -1,4 +1,9 @@
 package com.example.demo;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +15,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Iterator;
+import java.util.Map;
 
 @SpringBootApplication
 @RestController
@@ -18,10 +25,12 @@ public class DemoApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(DemoApplication.class, args);
 	}
-	@GetMapping("/hello")
-	public String hello(@RequestParam(value = "name", defaultValue = "World") String name) {
-		//return String.format("Hello %s!", name);
-		return getMachin("102");
+	@GetMapping("/array")
+	public ObjectNode hello(@RequestParam(value = "name", defaultValue = "World") String name) throws JsonProcessingException {
+		String data = getMachin(name);
+		System.out.println("before output");
+		ObjectNode returnvalue = getDatas(data);
+		return returnvalue;
 	}
 
 	public String getMachin(String id){
@@ -66,4 +75,61 @@ public class DemoApplication {
 	}
 
 
+	public ObjectNode getDatas(String data) throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		ObjectNode jsonOutput = objectMapper.createObjectNode();
+		JsonNode jsonNode = objectMapper.readTree(data);
+		int i = 0;
+		if (jsonNode.isObject()) {
+			System.out.println("In general array");
+			Iterator<Map.Entry<String, JsonNode>> fieldsIterator = jsonNode.fields();
+			while (fieldsIterator.hasNext()) {
+				Map.Entry<String, JsonNode> field = fieldsIterator.next();
+				String fieldName = field.getKey();
+				JsonNode fieldValue = field.getValue();
+				System.out.println("Field name: " + fieldName);
+				if (fieldName == "records") {
+					System.out.println("In records array");
+					System.out.println("Array values : " + fieldValue);
+					JsonNode jsonArray = objectMapper.readTree(fieldValue.toString());
+					//Iterator<Map.Entry<String, JsonNode>> fieldsIterator2 = fieldValue.fields();
+					if (jsonArray.isArray()) {
+						for (JsonNode node : jsonArray) {
+							if (node.get("fields")!=null) {
+								JsonNode Node = node.get("fields");
+								ObjectNode jsonObject = objectMapper.createObjectNode();
+								//HORAIRE ARRIVEE
+								String arriveetheorique = Node.get("arriveetheorique").asText();
+								//COORDONNEE
+								JsonNode coordonnees = Node.get("coordonnees");
+								ObjectNode position = objectMapper.createObjectNode();
+								if (coordonnees.isArray()) {
+									//LATITUDE
+									String latitude = coordonnees.get(0).asText();
+									//LONGITUDE
+									String longitude = coordonnees.get(1).asText();
+									position.put("latitude", latitude);
+									position.put("longitude", longitude);
+								}
+								//IDLIGNE
+								String idligne = Node.get("idligne").asText();
+								// SENS
+								String sens = Node.get("sens").asText();
+
+								jsonObject.put("id", idligne);
+								jsonObject.put("sens", sens);
+								jsonObject.put("position", position);
+								jsonObject.put("arriveetheorique", arriveetheorique);
+
+								jsonOutput.put(String.valueOf(i), jsonObject);
+								i++;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return jsonOutput;
+	}
 }
