@@ -21,7 +21,7 @@ import java.util.Map;
 @SpringBootApplication
 @RestController
 public class DemoApplication {
-	String URL= "http://127.0.0.1:5001/Stop/";
+	String URL= "http://collectors:5001/Stop/";
 	public static void main(String[] args) {
 		SpringApplication.run(DemoApplication.class, args);
 	}
