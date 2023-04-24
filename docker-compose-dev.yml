@@ -1,0 +1,31 @@
+version: "3.1"
+
+services:
+
+  cache:
+    image: redis:alpine3.17
+    restart: always
+
+  front:
+    image : ghcr.io/inden-intelligo/frontend:main
+    ports:
+      - 4200:4200
+  
+  back:
+    depends_on:
+      - cache
+    image : ghcr.io/inden-intelligo/backend:main
+    ports:
+      - 3000:3000
+
+  unit_process:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - 8080:8080
+  
+  collectors:
+    image : ghcr.io/inden-intelligo/collector:main
+    ports:
+      - 5001:5001
